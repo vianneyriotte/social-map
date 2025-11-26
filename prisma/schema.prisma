@@ -23,6 +23,8 @@ model User {
 
   sessions      Session[]
   accounts      Account[]
+  createdEvents Event[]
+  eventParticipations EventParticipant[]
 
   @@map("user")
 }
@@ -71,4 +73,41 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@map("verification")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  datetime    DateTime
+
+  placeName      String
+  placeAddress   String
+  placeLatitude  Float
+  placeLongitude Float
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator      User               @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  participants EventParticipant[]
+
+  @@map("event")
+}
+
+model EventParticipant {
+  id      String @id @default(cuid())
+  eventId String
+  userId  String
+  status  String @default("invited")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_participant")
 }
