@@ -19,6 +19,7 @@ model User {
   workLatitude  Float?
   workLongitude Float?
   avatarUrl     String?
+  showOnMap     Boolean @default(false)
 
   sessions      Session[]
   accounts      Account[]

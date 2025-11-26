@@ -6,6 +6,7 @@ async function getUsers() {
     where: {
       workLatitude: { not: null },
       workLongitude: { not: null },
+      showOnMap: true,
     },
     select: {
       id: true,
