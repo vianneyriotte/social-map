@@ -35,6 +35,11 @@ WORKDIR /app
 ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
+# Debug: Log build arguments
+RUN echo "============================================="
+RUN echo "[Docker Build] NEXT_PUBLIC_APP_URL = $NEXT_PUBLIC_APP_URL"
+RUN echo "============================================="
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -44,6 +49,7 @@ RUN npx prisma generate
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN echo "[Docker Build] Starting Next.js build with NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
 RUN npm run build
 
 # ================================
