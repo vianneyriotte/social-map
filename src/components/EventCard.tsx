@@ -13,7 +13,14 @@ import EventIcon from "@mui/icons-material/Event";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckIcon from "@mui/icons-material/Check";
 import CloseIcon from "@mui/icons-material/Close";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import AppleIcon from "@mui/icons-material/Apple";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
 import UserAvatar from "./UserAvatar";
+import { useState } from "react";
 
 interface User {
   id: string;
@@ -88,6 +95,69 @@ function getStatusColor(status: string): "success" | "error" | "warning" | "defa
   }
 }
 
+function formatDateForGoogle(date: Date): string {
+  const d = new Date(date);
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function formatDateForICS(date: Date): string {
+  const d = new Date(date);
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function generateGoogleCalendarUrl(event: Event): string {
+  const start = formatDateForGoogle(event.datetime);
+  const endDate = new Date(event.datetime);
+  endDate.setHours(endDate.getHours() + 2);
+  const end = formatDateForGoogle(endDate);
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: event.title,
+    dates: `${start}/${end}`,
+    location: `${event.placeName}, ${event.placeAddress}`,
+    details: event.description || "",
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function generateICSContent(event: Event): string {
+  const start = formatDateForICS(event.datetime);
+  const endDate = new Date(event.datetime);
+  endDate.setHours(endDate.getHours() + 2);
+  const end = formatDateForICS(endDate);
+  const now = formatDateForICS(new Date());
+
+  return `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Social Map//Event//FR
+BEGIN:VEVENT
+UID:${event.id}@socialmap
+DTSTAMP:${now}
+DTSTART:${start}
+DTEND:${end}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description || ""}
+LOCATION:${event.placeName}, ${event.placeAddress}
+GEO:${event.placeLatitude};${event.placeLongitude}
+END:VEVENT
+END:VCALENDAR`;
+}
+
+function downloadICS(event: Event) {
+  const content = generateICSContent(event);
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${event.title.replace(/[^a-zA-Z0-9]/g, "_")}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export default function EventCard({
   event,
   isCreator,
@@ -97,12 +167,32 @@ export default function EventCard({
   onDecline,
   onDelete,
 }: EventCardProps) {
+  const [calendarAnchor, setCalendarAnchor] = useState<null | HTMLElement>(null);
+
   const acceptedParticipants = event.participants.filter(
     (p) => p.status === "accepted"
   );
   const pendingParticipants = event.participants.filter(
     (p) => p.status === "invited"
   );
+
+  const handleCalendarClick = (e: React.MouseEvent<HTMLElement>) => {
+    setCalendarAnchor(e.currentTarget);
+  };
+
+  const handleCalendarClose = () => {
+    setCalendarAnchor(null);
+  };
+
+  const handleGoogleCalendar = () => {
+    window.open(generateGoogleCalendarUrl(event), "_blank");
+    handleCalendarClose();
+  };
+
+  const handleAppleCalendar = () => {
+    downloadICS(event);
+    handleCalendarClose();
+  };
 
   return (
     <Paper sx={{ p: 2 }}>
@@ -120,9 +210,18 @@ export default function EventCard({
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
             <EventIcon fontSize="small" color="action" />
-            <Typography variant="body2">
+            <Typography variant="body2" sx={{ flex: 1 }}>
               {formatDateTime(event.datetime)}
             </Typography>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<CalendarMonthIcon />}
+              onClick={handleCalendarClick}
+              sx={{ ml: 1 }}
+            >
+              Ajouter
+            </Button>
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
@@ -221,6 +320,25 @@ export default function EventCard({
           </IconButton>
         )}
       </Box>
+
+      <Menu
+        anchorEl={calendarAnchor}
+        open={Boolean(calendarAnchor)}
+        onClose={handleCalendarClose}
+      >
+        <MenuItem onClick={handleGoogleCalendar}>
+          <ListItemIcon>
+            <CalendarMonthIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Google Agenda</ListItemText>
+        </MenuItem>
+        <MenuItem onClick={handleAppleCalendar}>
+          <ListItemIcon>
+            <AppleIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Apple Calendar / ICS</ListItemText>
+        </MenuItem>
+      </Menu>
     </Paper>
   );
 }

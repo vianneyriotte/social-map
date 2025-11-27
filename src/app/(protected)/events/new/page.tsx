@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import Box from "@mui/material/Box";
 import { getDb } from "@/lib/prisma";
 import EventForm from "@/components/EventForm";
+import { sendEventInvitationEmail } from "@/lib/email";
 
 async function getAvailableUsers(currentUserId: string) {
   const prisma = getDb();
@@ -55,6 +56,12 @@ export default async function NewEventPage() {
     }
 
     const prisma = getDb();
+
+    const invitedUsers = await prisma.user.findMany({
+      where: { id: { in: data.participantIds } },
+      select: { id: true, email: true, name: true },
+    });
+
     await prisma.event.create({
       data: {
         title: data.title,
@@ -73,6 +80,31 @@ export default async function NewEventPage() {
         },
       },
     });
+
+    const eventDate = new Date(data.datetime).toLocaleDateString("fr-FR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+    await Promise.all(
+      invitedUsers.map((user) =>
+        sendEventInvitationEmail({
+          email: user.email,
+          inviteeName: user.name,
+          organizerName: currentSession.user.name,
+          eventTitle: data.title,
+          eventDate,
+          eventPlace: `${data.placeName}, ${data.placeAddress}`,
+          eventsUrl: `${baseUrl}/events`,
+        })
+      )
+    );
 
     revalidatePath("/events");
     redirect("/events");

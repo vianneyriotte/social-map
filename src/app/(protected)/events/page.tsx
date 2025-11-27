@@ -9,6 +9,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Link from "next/link";
 import { getDb } from "@/lib/prisma";
 import EventList from "@/components/EventList";
+import { sendEventAcceptedEmail } from "@/lib/email";
 
 async function getEvents(userId: string) {
   const prisma = getDb();
@@ -84,6 +85,37 @@ export default async function EventsPage() {
       },
       data: { status },
     });
+
+    if (status === "accepted") {
+      const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        include: {
+          creator: { select: { email: true, name: true } },
+        },
+      });
+
+      if (event) {
+        const eventDate = event.datetime.toLocaleDateString("fr-FR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+        await sendEventAcceptedEmail({
+          email: event.creator.email,
+          organizerName: event.creator.name,
+          participantName: currentSession.user.name,
+          eventTitle: event.title,
+          eventDate,
+          eventsUrl: `${baseUrl}/events`,
+        });
+      }
+    }
 
     revalidatePath("/events");
   }
