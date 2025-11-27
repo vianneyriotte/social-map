@@ -1,12 +1,15 @@
 # syntax=docker/dockerfile:1
 
 # ================================
-# Base image with Node.js 20
+# Base image with Node.js 20 (Debian for native module compatibility)
 # ================================
-FROM node:20-alpine AS base
+FROM node:20-slim AS base
 
-# Install dependencies for native modules (better-sqlite3, libsql)
-RUN apk add --no-cache libc6-compat python3 make g++
+# Install dependencies for native modules
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # ================================
 # Dependencies installation
@@ -55,11 +58,14 @@ RUN npm run build
 # ================================
 # Production runner
 # ================================
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
-# Install runtime dependencies for native modules
-RUN apk add --no-cache libc6-compat
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
