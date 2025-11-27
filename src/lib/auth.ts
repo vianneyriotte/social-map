@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { magicLink } from "better-auth/plugins";
 import { getDb } from "./prisma";
+import { sendMagicLinkEmail } from "./email";
 
 function createAuth() {
   return betterAuth({
@@ -12,7 +14,15 @@ function createAuth() {
       enabled: true,
       minPasswordLength: 8,
     },
-    plugins: [nextCookies()],
+    plugins: [
+      nextCookies(),
+      magicLink({
+        sendMagicLink: async ({ email, url }) => {
+          await sendMagicLinkEmail({ email, url });
+        },
+        expiresIn: 300,
+      }),
+    ],
     user: {
       additionalFields: {
         workAddress: {

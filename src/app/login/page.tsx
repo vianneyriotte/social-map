@@ -11,14 +11,18 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Link from "@mui/material/Link";
+import Divider from "@mui/material/Divider";
 import NextLink from "next/link";
-import { signIn } from "@/lib/auth-client";
+import { signIn, authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [magicLinkEmail, setMagicLinkEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [error, setError] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +43,30 @@ export default function LoginPage() {
         onError: (ctx) => {
           setError(ctx.error.message || "Erreur de connexion");
           setLoading(false);
+        },
+      }
+    );
+  };
+
+  const handleMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMagicLinkLoading(true);
+    setError("");
+    setMagicLinkSent(false);
+
+    await authClient.signIn.magicLink(
+      {
+        email: magicLinkEmail,
+        callbackURL: "/map",
+      },
+      {
+        onSuccess: () => {
+          setMagicLinkSent(true);
+          setMagicLinkLoading(false);
+        },
+        onError: (ctx) => {
+          setError(ctx.error.message || "Erreur lors de l'envoi du lien");
+          setMagicLinkLoading(false);
         },
       }
     );
@@ -105,6 +133,47 @@ export default function LoginPage() {
                 S&apos;inscrire
               </Link>
             </Typography>
+          </Box>
+
+          <Divider sx={{ my: 3 }}>ou</Divider>
+
+          <Box component="form" onSubmit={handleMagicLink}>
+            <Typography variant="subtitle1" gutterBottom>
+              Connexion par Magic Link
+            </Typography>
+
+            {magicLinkSent && (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Un lien de connexion a été envoyé à votre adresse email.
+                Vérifiez votre boîte de réception.
+              </Alert>
+            )}
+
+            <TextField
+              fullWidth
+              label="Email"
+              type="email"
+              value={magicLinkEmail}
+              onChange={(e) => setMagicLinkEmail(e.target.value)}
+              margin="normal"
+              required
+              autoComplete="email"
+            />
+
+            <Button
+              type="submit"
+              variant="outlined"
+              fullWidth
+              size="large"
+              disabled={magicLinkLoading}
+              sx={{ mt: 2 }}
+            >
+              {magicLinkLoading ? (
+                <CircularProgress size={24} />
+              ) : (
+                "Envoyer le lien de connexion"
+              )}
+            </Button>
           </Box>
         </Paper>
       </Box>

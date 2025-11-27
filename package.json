@@ -39,6 +39,7 @@
     "leaflet-defaulticon-compatibility": "^0.1.2",
     "mysql2": "^3.15.3",
     "next": "16.0.4",
+    "nodemailer": "^7.0.11",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-leaflet": "^5.0.0"
@@ -48,6 +49,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/leaflet": "^1.9.21",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "dotenv-cli": "^11.0.0",
