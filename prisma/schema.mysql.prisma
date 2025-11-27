@@ -18,7 +18,7 @@ model User {
   workAddress   String?   @db.Text
   workLatitude  Float?
   workLongitude Float?
-  avatarUrl     String?   @db.Text
+  avatarUrl     String?   @db.LongText
   showOnMap     Boolean   @default(false)
 
   sessions      Session[]
