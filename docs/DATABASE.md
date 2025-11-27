@@ -280,31 +280,37 @@ Le projet inclut un Dockerfile optimisé pour le déploiement sur Dokploy ou tou
 docker build -t social-map .
 ```
 
-### Variables d'environnement requises
+### Variables requises
 
-Dans Dokploy, configurer ces variables d'environnement :
+#### Build Args (au moment du build)
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_APP_URL` | URL publique de l'app (client-side) | `https://votre-domaine.com` |
+
+#### Variables d'environnement (au runtime)
 
 | Variable | Description | Exemple |
 |----------|-------------|---------|
 | `TURSO_DATABASE_URL` | URL de la base Turso | `libsql://social-map-db-xxx.turso.io` |
 | `TURSO_AUTH_TOKEN` | Token d'authentification Turso | `eyJhbGc...` |
 | `BETTER_AUTH_SECRET` | Secret pour Better Auth (32+ caractères) | `votre-secret-production-unique` |
-| `BETTER_AUTH_URL` | URL publique de l'app | `https://votre-domaine.com` |
-| `NEXT_PUBLIC_APP_URL` | URL publique de l'app | `https://votre-domaine.com` |
+| `BETTER_AUTH_URL` | URL publique de l'app (server-side) | `https://votre-domaine.com` |
 
 ### Lancer localement avec Docker
 
 ```bash
-# Build
-docker build -t social-map .
+# Build avec les variables NEXT_PUBLIC_*
+docker build -t social-map \
+  --build-arg NEXT_PUBLIC_APP_URL="http://localhost:3000" \
+  .
 
-# Run avec variables d'environnement
+# Run avec variables d'environnement runtime
 docker run -p 3000:3000 \
   -e TURSO_DATABASE_URL="libsql://..." \
   -e TURSO_AUTH_TOKEN="eyJ..." \
   -e BETTER_AUTH_SECRET="votre-secret" \
   -e BETTER_AUTH_URL="http://localhost:3000" \
-  -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
   social-map
 ```
 
@@ -313,7 +319,30 @@ docker run -p 3000:3000 \
 1. Créer une nouvelle application dans Dokploy
 2. Connecter votre repository Git
 3. Dokploy détectera automatiquement le Dockerfile
-4. Configurer les variables d'environnement dans l'interface Dokploy
+
+#### Variables de build (Build Args)
+
+Dans Dokploy, aller dans **Settings > Build > Build Arguments** et ajouter :
+
+| Argument | Valeur |
+|----------|--------|
+| `NEXT_PUBLIC_APP_URL` | `https://votre-domaine.com` |
+
+Ces variables sont intégrées dans le bundle JavaScript au moment du build.
+
+#### Variables d'environnement (Runtime)
+
+Dans Dokploy, aller dans **Settings > Environment** et ajouter :
+
+| Variable | Valeur |
+|----------|--------|
+| `TURSO_DATABASE_URL` | `libsql://social-map-db-xxx.turso.io` |
+| `TURSO_AUTH_TOKEN` | `eyJhbGc...` |
+| `BETTER_AUTH_SECRET` | `votre-secret-production-unique` |
+| `BETTER_AUTH_URL` | `https://votre-domaine.com` |
+
+Ces variables sont lues au démarrage du container.
+
 5. Déployer
 
 ### Architecture du Dockerfile
