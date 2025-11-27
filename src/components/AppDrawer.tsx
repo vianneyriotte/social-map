@@ -17,6 +17,7 @@ import ListItemText from "@mui/material/ListItemText";
 import MenuIcon from "@mui/icons-material/Menu";
 import MapIcon from "@mui/icons-material/Map";
 import PersonIcon from "@mui/icons-material/Person";
+import EventIcon from "@mui/icons-material/Event";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { signOut } from "@/lib/auth-client";
 import UserAvatar from "./UserAvatar";
@@ -53,6 +54,7 @@ export default function AppDrawer({ children, user }: AppDrawerProps) {
 
   const menuItems = [
     { text: "Carte", icon: <MapIcon />, path: "/map" },
+    { text: "Événements", icon: <EventIcon />, path: "/events" },
     { text: "Profil", icon: <PersonIcon />, path: "/profile" },
   ];
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -12,9 +13,18 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Switch from "@mui/material/Switch";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogActions from "@mui/material/DialogActions";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
+import DeleteIcon from "@mui/icons-material/Delete";
 import UserAvatar from "./UserAvatar";
 import { geocodeAddress, GeocodingResult } from "@/lib/geocoding";
+import { signOut } from "@/lib/auth-client";
 
 interface ProfileFormProps {
   user: {
@@ -25,6 +35,7 @@ interface ProfileFormProps {
     workLatitude?: number | null;
     workLongitude?: number | null;
     avatarUrl?: string | null;
+    showOnMap: boolean;
   };
   onSave: (data: {
     name: string;
@@ -32,10 +43,13 @@ interface ProfileFormProps {
     workLatitude: number;
     workLongitude: number;
     avatarUrl?: string;
+    showOnMap: boolean;
   }) => Promise<void>;
+  onDelete: () => Promise<void>;
 }
 
-export default function ProfileForm({ user, onSave }: ProfileFormProps) {
+export default function ProfileForm({ user, onSave, onDelete }: ProfileFormProps) {
+  const router = useRouter();
   const [name, setName] = useState(user.name);
   const [workAddress, setWorkAddress] = useState(user.workAddress || "");
   const [selectedCoords, setSelectedCoords] = useState<{
@@ -48,6 +62,7 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
   );
   const [avatarUrl, setAvatarUrl] = useState(user.avatarUrl || "");
   const [avatarPreview, setAvatarPreview] = useState(user.avatarUrl || "");
+  const [showOnMap, setShowOnMap] = useState(user.showOnMap);
 
   const [searchResults, setSearchResults] = useState<GeocodingResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -55,7 +70,37 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDeleteAccount = async () => {
+    if (deleteEmail !== user.email) {
+      setDeleteError("L'adresse email ne correspond pas");
+      return;
+    }
+
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      await onDelete();
+      // Déconnecter côté client et rediriger
+      await signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            router.push("/login");
+          },
+        },
+      });
+    } catch {
+      setDeleteError("Erreur lors de la suppression du compte");
+      setDeleting(false);
+    }
+  };
 
   const handleSearchAddress = async () => {
     if (!workAddress.trim()) return;
@@ -116,6 +161,7 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
         workLatitude: selectedCoords.lat,
         workLongitude: selectedCoords.lng,
         avatarUrl: avatarUrl || undefined,
+        showOnMap,
       });
       setSuccess(true);
     } catch {
@@ -231,6 +277,17 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
           )}
         </Box>
 
+        <FormControlLabel
+          control={
+            <Switch
+              checked={showOnMap}
+              onChange={(e) => setShowOnMap(e.target.checked)}
+            />
+          }
+          label="Apparaître sur la carte"
+          sx={{ mb: 2 }}
+        />
+
         <Button
           type="submit"
           variant="contained"
@@ -241,6 +298,71 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
           {saving ? <CircularProgress size={24} /> : "Sauvegarder"}
         </Button>
       </Box>
+
+      <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
+        <Typography variant="subtitle2" color="error" gutterBottom>
+          Zone de danger
+        </Typography>
+        <Button
+          variant="outlined"
+          color="error"
+          startIcon={<DeleteIcon />}
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          Supprimer mon compte
+        </Button>
+      </Box>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setDeleteEmail("");
+          setDeleteError("");
+        }}
+      >
+        <DialogTitle>Supprimer votre compte</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ mb: 2 }}>
+            Cette action est irréversible. Toutes vos données seront
+            définitivement supprimées. Pour confirmer, veuillez saisir votre
+            adresse email : <strong>{user.email}</strong>
+          </DialogContentText>
+          {deleteError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {deleteError}
+            </Alert>
+          )}
+          <TextField
+            autoFocus
+            fullWidth
+            label="Adresse email"
+            value={deleteEmail}
+            onChange={(e) => setDeleteEmail(e.target.value)}
+            placeholder={user.email}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setDeleteDialogOpen(false);
+              setDeleteEmail("");
+              setDeleteError("");
+            }}
+            disabled={deleting}
+          >
+            Annuler
+          </Button>
+          <Button
+            onClick={handleDeleteAccount}
+            color="error"
+            variant="contained"
+            disabled={deleting || !deleteEmail}
+          >
+            {deleting ? <CircularProgress size={24} /> : "Supprimer"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }
