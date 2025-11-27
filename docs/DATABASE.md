@@ -270,8 +270,71 @@ Pas besoin de modifier les fichiers `.env` manuellement.
 
 ---
 
-## 8. Ressources
+## 8. Déploiement Docker (Dokploy)
+
+Le projet inclut un Dockerfile optimisé pour le déploiement sur Dokploy ou tout autre orchestrateur Docker.
+
+### Build de l'image
+
+```bash
+docker build -t social-map .
+```
+
+### Variables d'environnement requises
+
+Dans Dokploy, configurer ces variables d'environnement :
+
+| Variable | Description | Exemple |
+|----------|-------------|---------|
+| `TURSO_DATABASE_URL` | URL de la base Turso | `libsql://social-map-db-xxx.turso.io` |
+| `TURSO_AUTH_TOKEN` | Token d'authentification Turso | `eyJhbGc...` |
+| `BETTER_AUTH_SECRET` | Secret pour Better Auth (32+ caractères) | `votre-secret-production-unique` |
+| `BETTER_AUTH_URL` | URL publique de l'app | `https://votre-domaine.com` |
+| `NEXT_PUBLIC_APP_URL` | URL publique de l'app | `https://votre-domaine.com` |
+
+### Lancer localement avec Docker
+
+```bash
+# Build
+docker build -t social-map .
+
+# Run avec variables d'environnement
+docker run -p 3000:3000 \
+  -e TURSO_DATABASE_URL="libsql://..." \
+  -e TURSO_AUTH_TOKEN="eyJ..." \
+  -e BETTER_AUTH_SECRET="votre-secret" \
+  -e BETTER_AUTH_URL="http://localhost:3000" \
+  -e NEXT_PUBLIC_APP_URL="http://localhost:3000" \
+  social-map
+```
+
+### Configuration Dokploy
+
+1. Créer une nouvelle application dans Dokploy
+2. Connecter votre repository Git
+3. Dokploy détectera automatiquement le Dockerfile
+4. Configurer les variables d'environnement dans l'interface Dokploy
+5. Déployer
+
+### Architecture du Dockerfile
+
+Le Dockerfile utilise un build multi-stage :
+
+1. **base** : Image Alpine avec Node.js 20 et dépendances natives
+2. **deps** : Installation des dépendances npm et génération Prisma
+3. **builder** : Build de l'application Next.js en mode standalone
+4. **runner** : Image finale minimale pour la production
+
+Avantages :
+- Image finale légère (~200MB au lieu de 1GB+)
+- Sécurité : exécution en tant qu'utilisateur non-root
+- Performance : mode standalone de Next.js
+
+---
+
+## 9. Ressources
 
 - [Documentation Turso](https://docs.turso.tech/)
 - [Prisma + libSQL](https://www.prisma.io/docs/orm/overview/databases/turso)
 - [Turso CLI Reference](https://docs.turso.tech/cli/introduction)
+- [Documentation Dokploy](https://docs.dokploy.com/)
