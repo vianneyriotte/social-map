@@ -20,12 +20,13 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
+COPY prisma.config.mariadb.ts ./
 
 # Install all dependencies (including devDependencies for build)
 RUN npm ci
 
-# Generate Prisma client
-RUN npx prisma generate
+# Generate Prisma client for MariaDB
+RUN npx prisma generate --config=prisma.config.mariadb.ts
 
 # ================================
 # Build stage
@@ -47,8 +48,11 @@ RUN echo "============================================="
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma client (ensure it's generated with build context)
-RUN npx prisma generate
+# Copy prisma config for MariaDB
+COPY prisma.config.mariadb.ts ./
+
+# Generate Prisma client for MariaDB
+RUN npx prisma generate --config=prisma.config.mariadb.ts
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -83,9 +87,16 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma files needed at runtime
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.mariadb.ts ./
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/@libsql ./node_modules/@libsql
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/mysql2 ./node_modules/mysql2
+
+# Copy entrypoint script
+COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
 
 # Switch to non-root user
 USER nextjs
@@ -96,5 +107,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the application
-CMD ["node", "server.js"]
+# Start the application with db sync
+CMD ["./docker-entrypoint.sh"]

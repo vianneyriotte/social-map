@@ -7,6 +7,28 @@ const globalForPrisma = global as unknown as {
 function createPrismaClient(): PrismaClient {
   const tursoUrl = process.env.TURSO_DATABASE_URL;
   const tursoAuthToken = process.env.TURSO_AUTH_TOKEN;
+  const databaseUrl = process.env.DATABASE_URL;
+
+  // MariaDB/MySQL: Use adapter
+  if (databaseUrl?.startsWith("mysql://") || databaseUrl?.startsWith("mariadb://")) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PrismaMariaDb } = require("@prisma/adapter-mariadb");
+
+    // Parse DATABASE_URL: mysql://user:password@host:port/database
+    // or mariadb://user:password@host:port/database
+    const normalizedUrl = databaseUrl.replace("mariadb://", "mysql://");
+    const url = new URL(normalizedUrl);
+    const adapter = new PrismaMariaDb({
+      host: url.hostname,
+      port: parseInt(url.port) || 3306,
+      user: url.username,
+      password: url.password,
+      database: url.pathname.slice(1), // Remove leading /
+      connectionLimit: 5,
+    });
+
+    return new PrismaClient({ adapter });
+  }
 
   if (tursoUrl && tursoAuthToken) {
     // Production: Use Turso (libSQL)
