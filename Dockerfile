@@ -56,6 +56,7 @@ RUN npx prisma generate --config=prisma.config.mariadb.ts
 
 # Build Next.js application
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DB_PROVIDER=mariadb
 RUN echo "[Docker Build] Starting Next.js build with NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL"
 RUN npm run build:mariadb
 
