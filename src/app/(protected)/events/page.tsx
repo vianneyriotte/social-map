@@ -7,10 +7,11 @@ import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
 import AddIcon from "@mui/icons-material/Add";
 import Link from "next/link";
-import prisma from "@/lib/prisma";
+import { getDb } from "@/lib/prisma";
 import EventList from "@/components/EventList";
 
 async function getEvents(userId: string) {
+  const prisma = getDb();
   const createdEvents = await prisma.event.findMany({
     where: { createdById: userId },
     include: {
@@ -75,6 +76,7 @@ export default async function EventsPage() {
       throw new Error("Non autorisé");
     }
 
+    const prisma = getDb();
     await prisma.eventParticipant.updateMany({
       where: {
         eventId,
@@ -97,6 +99,7 @@ export default async function EventsPage() {
       throw new Error("Non autorisé");
     }
 
+    const prisma = getDb();
     const event = await prisma.event.findUnique({
       where: { id: eventId },
     });

@@ -1,7 +1,13 @@
 import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AppDrawer from "@/components/AppDrawer";
+
+async function hasAuthCookies(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
+  return allCookies.some((cookie) => cookie.name.startsWith("better-auth"));
+}
 
 export default async function ProtectedLayout({
   children,
@@ -13,6 +19,10 @@ export default async function ProtectedLayout({
   });
 
   if (!session) {
+    const hasCookies = await hasAuthCookies();
+    if (hasCookies) {
+      redirect("/api/auth/clear-session");
+    }
     redirect("/login");
   }
 

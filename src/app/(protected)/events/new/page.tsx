@@ -3,10 +3,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import Box from "@mui/material/Box";
-import prisma from "@/lib/prisma";
+import { getDb } from "@/lib/prisma";
 import EventForm from "@/components/EventForm";
 
 async function getAvailableUsers(currentUserId: string) {
+  const prisma = getDb();
   const users = await prisma.user.findMany({
     where: {
       id: { not: currentUserId },
@@ -53,6 +54,7 @@ export default async function NewEventPage() {
       throw new Error("Non autorisé");
     }
 
+    const prisma = getDb();
     await prisma.event.create({
       data: {
         title: data.title,

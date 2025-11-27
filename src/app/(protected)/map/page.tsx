@@ -1,7 +1,8 @@
-import prisma from "@/lib/prisma";
+import { getDb } from "@/lib/prisma";
 import MapWrapper from "@/components/MapWrapper";
 
 async function getUsers() {
+  const prisma = getDb();
   const users = await prisma.user.findMany({
     where: {
       workLatitude: { not: null },
