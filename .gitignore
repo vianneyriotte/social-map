@@ -34,10 +34,6 @@ yarn-error.log*
 .env
 .env.local
 .env.turso
-!.env.production.example
-
-# vercel
-.vercel
 
 # typescript
 *.tsbuildinfo

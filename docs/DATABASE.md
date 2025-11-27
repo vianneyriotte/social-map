@@ -6,7 +6,6 @@ Ce projet utilise **Prisma** avec deux backends de base de données :
 |---------------|-----------------|------------|--------------|
 | Local (dev) | SQLite | `@prisma/adapter-better-sqlite3` | `.env.local` |
 | Local (Turso) | Turso | `@prisma/adapter-libsql` | `.env.turso` |
-| Staging/Prod | Turso | `@prisma/adapter-libsql` | Vercel Dashboard |
 
 La détection est automatique : si `TURSO_DATABASE_URL` et `TURSO_AUTH_TOKEN` sont définis, l'app utilise Turso. Sinon, elle utilise SQLite local.
 
@@ -18,7 +17,6 @@ La détection est automatique : si `TURSO_DATABASE_URL` et `TURSO_AUTH_TOKEN` so
 |---------|-------------|-----|
 | `.env.local` | Dev local avec SQLite | Ignoré |
 | `.env.turso` | Dev local avec Turso | Ignoré |
-| `.env.production.example` | Template pour Vercel | Commité |
 
 ---
 
@@ -65,7 +63,7 @@ npm run db:studio
 
 ## 2. Développement Local avec Turso
 
-Utile pour tester avec la vraie base de production/staging en local.
+Utile pour tester avec la vraie base Turso en local.
 
 ### Prérequis
 
@@ -119,78 +117,26 @@ L'app utilisera Turso grâce au fichier `.env.turso`.
 
 ---
 
-## 3. Staging / Production (Vercel + Turso)
+## 3. Appliquer le schéma sur Turso
 
-### Créer la base Turso (une seule fois)
+### Première fois (base vide)
 
 ```bash
-# Créer la base
-turso db create social-map-db
-
-# Obtenir l'URL
-turso db show social-map-db --url
-
-# Créer un token
-turso db tokens create social-map-db
+npm run db:push:turso
 ```
 
-### Appliquer le schéma sur Turso
-
+Ou manuellement :
 ```bash
-# Générer et appliquer le SQL
 npx prisma migrate diff --from-empty --to-schema ./prisma/schema.prisma --script | turso db shell social-map-db
 ```
 
-Pour vérifier que les tables sont créées :
+### Vérifier les tables
+
 ```bash
 turso db shell social-map-db
 .tables
 .quit
 ```
-
-### Configurer Vercel
-
-#### Via CLI
-
-```bash
-# Installer Vercel CLI
-npm install -g vercel
-
-# Lier le projet
-vercel link
-
-# Ajouter les variables d'environnement
-vercel env add TURSO_DATABASE_URL
-vercel env add TURSO_AUTH_TOKEN
-vercel env add BETTER_AUTH_SECRET
-vercel env add BETTER_AUTH_URL
-vercel env add NEXT_PUBLIC_APP_URL
-```
-
-#### Via Dashboard Vercel
-
-1. Aller dans **Settings** > **Environment Variables**
-2. Ajouter :
-
-| Variable | Valeur | Environnements |
-|----------|--------|----------------|
-| `TURSO_DATABASE_URL` | `libsql://xxx.turso.io` | Production, Preview |
-| `TURSO_AUTH_TOKEN` | `eyJhbGc...` | Production, Preview |
-| `BETTER_AUTH_SECRET` | `random-32-char-string` | Production, Preview |
-| `BETTER_AUTH_URL` | `https://ton-app.vercel.app` | Production |
-| `NEXT_PUBLIC_APP_URL` | `https://ton-app.vercel.app` | Production |
-
-### Déployer
-
-```bash
-# Preview
-vercel
-
-# Production
-vercel --prod
-```
-
-Ou via GitHub : push sur `main` déclenche un déploiement automatique.
 
 ---
 
@@ -207,15 +153,11 @@ npm run db:migrate -- --name ma_modification
 # 3. Tester en local avec SQLite
 npm run dev
 
-# 4. (Optionnel) Tester en local avec Turso
-# Configurer TURSO_DATABASE_URL et TURSO_AUTH_TOKEN dans .env
-npm run dev
+# 4. Tester en local avec Turso
+npm run dev:turso
 
-# 5. Appliquer sur Turso production
-npx prisma migrate diff --from-empty --to-schema ./prisma/schema.prisma --script | turso db shell social-map-db
-
-# 6. Déployer sur Vercel
-vercel --prod
+# 5. Appliquer sur Turso
+npm run db:push:turso
 ```
 
 ### Migration incrémentale (base existante)
@@ -223,7 +165,6 @@ vercel --prod
 Si la base Turso a déjà des données et tu veux ajouter une colonne :
 
 ```bash
-# Générer uniquement le diff (pas --from-empty)
 npx prisma migrate diff \
   --from-url "file:./dev.db" \
   --to-schema ./prisma/schema.prisma \
@@ -279,7 +220,7 @@ npx prisma migrate diff \
 
 ### L'app utilise SQLite au lieu de Turso
 
-Vérifier que les deux variables sont définies dans `.env` :
+Vérifier que les deux variables sont définies dans `.env.turso` :
 ```env
 TURSO_DATABASE_URL="libsql://..."
 TURSO_AUTH_TOKEN="eyJ..."
@@ -304,7 +245,7 @@ turso db tokens create social-map-db
 
 Appliquer le schéma :
 ```bash
-npx prisma migrate diff --from-empty --to-schema ./prisma/schema.prisma --script | turso db shell social-map-db
+npm run db:push:turso
 ```
 
 ### Le client Prisma n'a pas les bons types
@@ -333,5 +274,4 @@ Pas besoin de modifier les fichiers `.env` manuellement.
 
 - [Documentation Turso](https://docs.turso.tech/)
 - [Prisma + libSQL](https://www.prisma.io/docs/orm/overview/databases/turso)
-- [Vercel Deployment](https://vercel.com/docs)
 - [Turso CLI Reference](https://docs.turso.tech/cli/introduction)
