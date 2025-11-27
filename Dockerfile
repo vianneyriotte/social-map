@@ -85,14 +85,15 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files needed at runtime
+# Copy Prisma files for runtime adapter
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mariadb.ts ./
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/@libsql ./node_modules/@libsql
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/mysql2 ./node_modules/mysql2
+
+# Copy full node_modules for Prisma CLI (db push)
+COPY --from=builder /app/node_modules ./prisma-cli/node_modules
+COPY --from=builder /app/package.json ./prisma-cli/
+COPY --from=builder /app/prisma ./prisma-cli/prisma
+COPY --from=builder /app/prisma.config.mariadb.ts ./prisma-cli/
 
 # Copy entrypoint script
 COPY --from=builder --chown=nextjs:nodejs /app/docker-entrypoint.sh ./
