@@ -14,7 +14,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const publicPaths = ["/login", "/signup", "/api/auth"];
+  const publicPaths = ["/login", "/signup", "/reset-password", "/api/auth"];
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path));
 
   if (!sessionCookie && !isPublicPath) {

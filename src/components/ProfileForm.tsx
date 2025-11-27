@@ -22,9 +22,10 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogActions from "@mui/material/DialogActions";
 import PhotoCamera from "@mui/icons-material/PhotoCamera";
 import DeleteIcon from "@mui/icons-material/Delete";
+import LockIcon from "@mui/icons-material/Lock";
 import UserAvatar from "./UserAvatar";
 import { geocodeAddress, GeocodingResult } from "@/lib/geocoding";
-import { signOut } from "@/lib/auth-client";
+import { signOut, authClient } from "@/lib/auth-client";
 
 interface ProfileFormProps {
   user: {
@@ -75,6 +76,14 @@ export default function ProfileForm({ user, onSave, onDelete }: ProfileFormProps
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDeleteAccount = async () => {
@@ -100,6 +109,48 @@ export default function ProfileForm({ user, onSave, onDelete }: ProfileFormProps
       setDeleteError("Erreur lors de la suppression du compte");
       setDeleting(false);
     }
+  };
+
+  const handleChangePassword = async () => {
+    setPasswordError("");
+    setPasswordSuccess(false);
+
+    if (newPassword.length < 8) {
+      setPasswordError("Le nouveau mot de passe doit contenir au moins 8 caractères");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    setChangingPassword(true);
+
+    await authClient.changePassword(
+      {
+        currentPassword,
+        newPassword,
+        revokeOtherSessions: true,
+      },
+      {
+        onSuccess: () => {
+          setPasswordSuccess(true);
+          setChangingPassword(false);
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmNewPassword("");
+          setTimeout(() => {
+            setPasswordDialogOpen(false);
+            setPasswordSuccess(false);
+          }, 2000);
+        },
+        onError: (ctx) => {
+          setPasswordError(ctx.error.message || "Erreur lors du changement de mot de passe");
+          setChangingPassword(false);
+        },
+      }
+    );
   };
 
   const handleSearchAddress = async () => {
@@ -300,6 +351,19 @@ export default function ProfileForm({ user, onSave, onDelete }: ProfileFormProps
       </Box>
 
       <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
+        <Typography variant="subtitle2" gutterBottom>
+          Sécurité
+        </Typography>
+        <Button
+          variant="outlined"
+          startIcon={<LockIcon />}
+          onClick={() => setPasswordDialogOpen(true)}
+        >
+          Changer le mot de passe
+        </Button>
+      </Box>
+
+      <Box sx={{ mt: 3, pt: 3, borderTop: 1, borderColor: "divider" }}>
         <Typography variant="subtitle2" color="error" gutterBottom>
           Zone de danger
         </Typography>
@@ -361,6 +425,88 @@ export default function ProfileForm({ user, onSave, onDelete }: ProfileFormProps
           >
             {deleting ? <CircularProgress size={24} /> : "Supprimer"}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={passwordDialogOpen}
+        onClose={() => {
+          setPasswordDialogOpen(false);
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmNewPassword("");
+          setPasswordError("");
+          setPasswordSuccess(false);
+        }}
+      >
+        <DialogTitle>Changer le mot de passe</DialogTitle>
+        <DialogContent>
+          {passwordSuccess ? (
+            <Alert severity="success">
+              Mot de passe modifié avec succès !
+            </Alert>
+          ) : (
+            <>
+              {passwordError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {passwordError}
+                </Alert>
+              )}
+              <TextField
+                autoFocus
+                fullWidth
+                type="password"
+                label="Mot de passe actuel"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                margin="normal"
+                autoComplete="current-password"
+              />
+              <TextField
+                fullWidth
+                type="password"
+                label="Nouveau mot de passe"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                margin="normal"
+                autoComplete="new-password"
+                helperText="Minimum 8 caractères"
+              />
+              <TextField
+                fullWidth
+                type="password"
+                label="Confirmer le nouveau mot de passe"
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                margin="normal"
+                autoComplete="new-password"
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setPasswordDialogOpen(false);
+              setCurrentPassword("");
+              setNewPassword("");
+              setConfirmNewPassword("");
+              setPasswordError("");
+              setPasswordSuccess(false);
+            }}
+            disabled={changingPassword}
+          >
+            {passwordSuccess ? "Fermer" : "Annuler"}
+          </Button>
+          {!passwordSuccess && (
+            <Button
+              onClick={handleChangePassword}
+              variant="contained"
+              disabled={changingPassword || !currentPassword || !newPassword || !confirmNewPassword}
+            >
+              {changingPassword ? <CircularProgress size={24} /> : "Modifier"}
+            </Button>
+          )}
         </DialogActions>
       </Dialog>
     </Paper>
