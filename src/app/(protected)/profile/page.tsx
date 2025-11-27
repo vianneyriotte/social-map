@@ -2,11 +2,12 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import Box from "@mui/material/Box";
-import prisma from "@/lib/prisma";
+import { getDb } from "@/lib/prisma";
 import ProfileForm from "@/components/ProfileForm";
 import { revalidatePath } from "next/cache";
 
 async function getUser(userId: string) {
+  const prisma = getDb();
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
@@ -57,6 +58,7 @@ export default async function ProfilePage() {
       throw new Error("Non autorisé");
     }
 
+    const prisma = getDb();
     await prisma.user.update({
       where: { id: currentSession.user.id },
       data: {
@@ -86,6 +88,7 @@ export default async function ProfilePage() {
     }
 
     const userId = currentSession.user.id;
+    const prisma = getDb();
 
     // Révoquer toutes les sessions de l'utilisateur
     await prisma.session.deleteMany({
