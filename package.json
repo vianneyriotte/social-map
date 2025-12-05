@@ -19,7 +19,9 @@
     "db:studio:mariadb": "dotenv -e .env.mariadb -- prisma studio --config=prisma.config.mariadb.ts",
     "db:push": "prisma db push",
     "db:push:mariadb": "dotenv -e .env.mariadb -- prisma db push --config=prisma.config.mariadb.ts",
-    "db:push:turso": "npx prisma migrate diff --from-empty --to-schema ./prisma/schema.prisma --script | turso db shell social-map-db"
+    "db:push:turso": "npx prisma migrate diff --from-empty --to-schema ./prisma/schema.prisma --script | turso db shell social-map-db",
+    "version:generate": "node scripts/generate-version.js",
+    "prepare": "husky"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -55,6 +57,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.0.7",
+    "husky": "^9.1.7",
     "prisma": "^7.1.0",
     "tailwindcss": "^4.1.17",
     "tsx": "^4.21.0",
