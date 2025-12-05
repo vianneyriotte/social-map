@@ -5,10 +5,13 @@
 # ================================
 FROM node:20-slim AS base
 
-# Install dependencies for native modules
+# Install dependencies for native modules (including build tools for lightningcss)
 RUN apt-get update && apt-get install -y \
     openssl \
     ca-certificates \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # ================================
@@ -23,7 +26,8 @@ COPY prisma ./prisma/
 COPY prisma.config.mariadb.ts ./
 
 # Install all dependencies (including devDependencies for build)
-RUN npm ci
+# Force reinstall of optional dependencies for correct platform
+RUN npm ci && npm rebuild lightningcss
 
 # Generate Prisma client for MariaDB
 RUN npx prisma generate --config=prisma.config.mariadb.ts
