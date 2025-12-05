@@ -26,8 +26,8 @@ COPY prisma ./prisma/
 COPY prisma.config.mariadb.ts ./
 
 # Install all dependencies (including devDependencies for build)
-# Install lightningcss native binary for linux-x64
-RUN npm ci && npm install lightningcss-linux-x64-gnu
+# Install native binaries for linux-x64 (Tailwind CSS v4 requires these)
+RUN npm ci && npm install lightningcss-linux-x64-gnu @tailwindcss/oxide-linux-x64-gnu
 
 # Generate Prisma client for MariaDB
 RUN npx prisma generate --config=prisma.config.mariadb.ts
